@@ -60,12 +60,13 @@ export async function dbFetch(): Promise<Ghost[]> {
 
 export async function dbAdd(text: string): Promise<Ghost> {
   const supabase = createClient()
-  const ghost: Omit<Ghost, 'userId'> = { id: crypto.randomUUID(), text, ts: Date.now(), searched: false }
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) throw new Error('Not logged in')
+  const ghost = { id: crypto.randomUUID(), text, ts: Date.now(), searched: false, user_id: user.id }
   const { data, error } = await supabase.from('ghosts').insert(ghost).select().single()
   if (error) throw error
   return data as Ghost
 }
-
 export async function dbMarkSearched(id: string): Promise<void> {
   const supabase = createClient()
   const { error } = await supabase.from('ghosts').update({ searched: true }).eq('id', id)
